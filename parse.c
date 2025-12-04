@@ -25,7 +25,7 @@ static void get_position(const void *base, const void *rb, vec2f_t *ret) {
 static void get_name(const void *base, const void *info, char *name, int *len) {
     const void *info_get_name = base + 0x7D6160;
 
-    void *sys_str_o = NULL;
+    void *sys_str = NULL;
 
     uint16_t *ch = NULL;
     int i = 0;
@@ -37,19 +37,24 @@ static void get_name(const void *base, const void *info, char *name, int *len) {
         "call %3\n"
         "add esp, 8\n"
         ".att_syntax prefix\n"
-        : "=a" (sys_str_o)
+        : "=a" (sys_str)
         : "r" (NULL), "r" (info), "r" (info_get_name)
         : "memory"
     );
 
-    *len = *(int *)(sys_str_o + 0x8);
+    if (sys_str == NULL) {
+        name[0] = '\0';
+        *len = 0;
+        return;
+    }
 
-    ch = (uint16_t *)(sys_str_o + 0xc);
+    *len = *(int *)(sys_str + 0x8);
+
+    ch = (uint16_t *)(sys_str + 0xc);
     for (; i < *len; i++) {
         name[i] = (char)*ch++;
     }
-
-    ch[i] = '\0';
+    name[i] = '\0';
 }
 
 static void str_for_role(player_role_t role, char *out) {
@@ -82,11 +87,27 @@ static void get_role(const void *base, const void *info, player_role_t *ret, cha
     str_for_role(*ret, role_str);
 }
 
+static void get_id(const void *base, const void *raw, uint8_t *id) {
+    (void)base;
+
+    *id = *(uint8_t *)(raw + 0x28);
+}
+
 void parse_player(const void *base, const void *raw, player_t *parsed) {
     void *info = *(void **)(raw + 0x58);
     void *rb = *(void **)(raw + 0xD0);
 
+    if (rb == NULL || info == NULL) {
+        memset(parsed, 0, sizeof(player_t));
+        return;
+    }
+
+    get_id(base, raw, &parsed->id);
     get_position(base, rb, &parsed->pos);
     get_name(base, info, parsed->name, &parsed->name_len);
     get_role(base, info, &parsed->role, parsed->role_str);
+}
+
+void parse_player_id(const void *base, const void *raw, uint8_t *parsed) {
+    get_id(base, raw, parsed);
 }

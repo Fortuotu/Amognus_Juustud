@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 typedef struct vec2f_s {
     float x;
     float y;
@@ -22,6 +24,7 @@ typedef enum player_role_e {
 } player_role_t;
 
 typedef struct player_s {
+    uint8_t id;
     char name[128];
     int name_len;
     vec2f_t pos;
@@ -30,3 +33,4 @@ typedef struct player_s {
 } player_t;
 
 void parse_player(const void *base, const void *raw, player_t *parsed);
+void parse_player_id(const void *base, const void *raw, uint8_t *parsed);

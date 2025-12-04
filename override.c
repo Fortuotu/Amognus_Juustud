@@ -15,7 +15,7 @@ typedef struct override_s {
 static override_t installed[8] = { 0 };
 static int next_idx = 0;
 
-int override_install(void *target, void *override) {
+int override_install(void *target, void *hook, size_t tramp_size) {
     const size_t PAGE_SIZE = 4096;
 
     static uint8_t shellcode[OVERRIDE_SIZE] = {
@@ -23,7 +23,7 @@ int override_install(void *target, void *override) {
         0xC3
     };
 
-    *(void **)(&shellcode[1]) = override;
+    *(void **)(&shellcode[1]) = hook;
 
     mprotect(
         (void *)((uint32_t)target - ((uint32_t)target % PAGE_SIZE)),
