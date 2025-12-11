@@ -10,6 +10,7 @@
 #include "io.h"
 #include "override.h"
 #include "parse.h"
+#include "hooks.h"
 
 void *find_gameassembly() {
     FILE *maps_file = fopen("/proc/self/maps", "r");
@@ -130,6 +131,8 @@ void *main_thread(void *arg) {
 
             pcfu_idx = override_install(pcfu, pcfu_override);
 
+            hooks_init();
+
             sprintf(buf, "Override succesfully installed, gameassembly base: %p\n", gameassembly);
             io_sendstr(buf);
         }
@@ -137,6 +140,12 @@ void *main_thread(void *arg) {
             override_enable(pcfu_idx);
 
             sprintf(buf, "Override enabled\n");
+            io_sendstr(buf);
+        }
+        else if (strcmp(buf, "toggle") == 0) {
+            hooks_toggle();
+
+            sprintf(buf, "Toggled hooks.\n");
             io_sendstr(buf);
         }
         else if (strcmp(buf, "disable") == 0) {
