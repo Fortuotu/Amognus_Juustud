@@ -38,6 +38,8 @@ int io_init(const char *sock_file, int buf_size) {
     if (result == -1) {
         return -1;
     }
+
+    return 0;
 }
 
 int io_wait_connection() {
@@ -45,6 +47,8 @@ int io_wait_connection() {
     if (io.data_fd == -1) {
         return -1;
     }
+
+    return 0;
 }
 
 void io_sendstr(const char *buf) {

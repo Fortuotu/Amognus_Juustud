@@ -24,7 +24,7 @@ void *find_gameassembly() {
     void *smallest = NULL;
 
     while (getline(&line, &size, maps_file) != -1) {
-        sscanf(line, "%lx-%lx %*s %*s %*s %*s %1027[^\n]", &start, &end, filename);
+        sscanf(line, "%p-%p %*s %*s %*s %*s %1027[^\n]", &start, &end, filename);
         
         if (strstr(filename, "GameAssembly.dll") != NULL) {            
             if (start < smallest || smallest == NULL) {
@@ -39,13 +39,13 @@ void *find_gameassembly() {
     return smallest;
 }
 
-void *gameassembly = NULL;
+static void *gameassembly = NULL;
 
 static int pcfu_idx = 0;
 static void (*pcfu)(void *self) = NULL;
 
 static void *latest_player = NULL;
-int pcfu_call_counter = 0;
+static int pcfu_call_counter = 0;
 
 #define MAX_PLAYERS 128
 
@@ -60,8 +60,6 @@ static pthread_mutex_t players_mutex = { 0 };
 
 __attribute__((ms_abi))
 void pcfu_override(void *self) {
-    static uint8_t buf[512] = { 0 };
-
     player_t player = { 0 };
     uint8_t player_id = -1;
     int player_idx = -1;
@@ -98,7 +96,7 @@ void *main_thread(void *arg) {
 
     int result = 0;
 
-    static uint8_t buf[512] = { 0 };
+    static char buf[512] = { 0 };
 
     char filename[256];
     pid_t pid = getpid();
