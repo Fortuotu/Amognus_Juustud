@@ -11,6 +11,7 @@
 #include "override.h"
 #include "parse.h"
 #include "hooks.h"
+#include "glad/glad.h"
 
 void *find_gameassembly() {
     FILE *maps_file = fopen("/proc/self/maps", "r");
@@ -117,13 +118,7 @@ void *main_thread(void *arg) {
     while (1) {
         io_recvstr(buf);
 
-        if (strcmp(buf, "pid") == 0) {
-            int pid = getpid();
-            
-            sprintf(buf, "%d\n", pid);
-            io_sendstr(buf);
-        }
-        else if (strcmp(buf, "install") == 0) {
+        if (strcmp(buf, "install") == 0) {
             gameassembly = find_gameassembly();
             pcfu = gameassembly + 0x5C2520;
 

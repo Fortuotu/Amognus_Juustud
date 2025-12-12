@@ -20,7 +20,7 @@ void hooks_init() {
     glXSwapBuffers_orig = dlsym(glx_so, "glXSwapBuffers");
     glXSwapBuffers_idx = override_install(glXSwapBuffers_orig, __glXSwapBuffers_override);
 
-    render_init(&renderer);
+    render_new(&renderer);
 
     inited = 1;
 }
