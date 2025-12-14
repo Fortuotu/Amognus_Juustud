@@ -7,52 +7,47 @@
 #include <dlfcn.h>
 
 typedef struct hooks_s {
-    uint8_t inited;
+    uint8_t loaded;
+    uint8_t enabled;
+
+    void *glx_so;
+    void (*glXSwapBuffers_orig)(void *, void *);
+    int glXSwapBuffers_idx;
 
     void (*render_hook)(void);
 } hooks_t;
 
-static hooks_t hooks;
+static hooks_t hooks = { 0 };
 
-static int inited = 0;
-
-static int glXSwapBuffers_idx;
-static void (*glXSwapBuffers_orig)(void *, void *);
-
-
-void __glXSwapBuffers_override(void *dpy, void *drawable);
+void glXSwapBuffers_override(void *dpy, void *drawable);
 
 void hooks_init(void (*render_hook)(void)) {
-    void *glx_so = dlopen("libGLX.so.0", RTLD_LAZY);
-    glXSwapBuffers_orig = dlsym(glx_so, "glXSwapBuffers");
-    glXSwapBuffers_idx = override_install(glXSwapBuffers_orig, __glXSwapBuffers_override);
+    hooks.glx_so = dlopen("libGLX.so.0", RTLD_LAZY);
+    hooks.glXSwapBuffers_orig = dlsym(hooks.glx_so, "glXSwapBuffers");
+    hooks.glXSwapBuffers_idx = override_install(hooks.glXSwapBuffers_orig, glXSwapBuffers_override);
 
-    render_new(&renderer);
-
-    inited = 1;
+    hooks.loaded = true;
 }
 
 void hooks_toggle() {
-    static int enabled = 0;
-
-    if (!inited) {
+    if (!hooks.loaded) {
         return;
     }
 
-    if (!enabled) {
-        override_enable(glXSwapBuffers_idx);
+    if (!hooks.enabled) {
+        override_enable(hooks.glXSwapBuffers_idx);
     }
     else {
-        override_disable(glXSwapBuffers_idx);
+        override_disable(hooks.glXSwapBuffers_idx);
     }
 
-    enabled = !enabled;
+    hooks.enabled = !hooks.enabled;
 }
 
-void __glXSwapBuffers_override(void *dpy, void *drawable) {
+static void glXSwapBuffers_override(void *dpy, void *drawable) {
+    hooks.render_hook();
 
-
-    override_disable(glXSwapBuffers_idx);
+    override_disable(hooks.glXSwapBuffers_idx);
     glXSwapBuffers_orig(dpy, drawable);
-    override_enable(glXSwapBuffers_idx);
+    override_enable(hooks.glXSwapBuffers_idx);
 }

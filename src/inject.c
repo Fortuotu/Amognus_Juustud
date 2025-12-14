@@ -11,34 +11,8 @@
 #include "override.h"
 #include "parse.h"
 #include "hooks.h"
-#include "glad/glad.h"
-
-void *find_gameassembly() {
-    FILE *maps_file = fopen("/proc/self/maps", "r");
-    char *line = NULL;
-    size_t size = 0;
-
-    void *start = NULL;
-    void *end = NULL;
-    char filename[1028] = { 0 };
-
-    void *smallest = NULL;
-
-    while (getline(&line, &size, maps_file) != -1) {
-        sscanf(line, "%p-%p %*s %*s %*s %*s %1027[^\n]", &start, &end, filename);
-        
-        if (strstr(filename, "GameAssembly.dll") != NULL) {            
-            if (start < smallest || smallest == NULL) {
-                smallest = start;
-            }
-        }
-    }
-
-    free(line);
-    fclose(maps_file);
-
-    return smallest;
-}
+#include "renderer.h"
+#include "utils.h"
 
 static void *gameassembly = NULL;
 
@@ -47,6 +21,8 @@ static void (*pcfu)(void *self) = NULL;
 
 static void *latest_player = NULL;
 static int pcfu_call_counter = 0;
+
+static renderer_t renderer = { 0 };
 
 #define MAX_PLAYERS 128
 
@@ -92,6 +68,14 @@ void pcfu_override(void *self) {
     pcfu_call_counter++;
 }
 
+static void render_overlay() {
+    renderer_start(&renderer);
+
+    renderer_add_line(&renderer, 0.3f, 0.4f, 0.8f, 0.7f);
+
+    renderer_finish(&renderer);
+}
+
 void *main_thread(void *arg) {
     (void)arg;
 
@@ -124,7 +108,7 @@ void *main_thread(void *arg) {
 
             pcfu_idx = override_install(pcfu, pcfu_override);
 
-            hooks_init();
+            hooks_init(render_overlay);
 
             sprintf(buf, "Override succesfully installed, gameassembly base: %p\n", gameassembly);
             io_sendstr(buf);
