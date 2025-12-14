@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <math.h>
+#include "utils.h"
 
 #include "glad/glad.h"
 
@@ -30,6 +31,11 @@ typedef struct renderer_s {
 
     size_t buffer_offset;
     size_t draw_count;
+
+    float vp_x;
+    float vp_y;
+    float vp_width;
+    float vp_heigth;
 
     uint8_t pointers_loaded;
     uint8_t fully_loaded;

@@ -10,6 +10,9 @@ void renderer_create(renderer_t *renderer) {
     renderer->pointers_loaded = false;
     renderer->fully_loaded = false;
 
+    renderer->vp_width = 0;
+    renderer->vp_heigth = 0;
+
     renderer->buffer_offset = 0;
     renderer->draw_count = 0;
 }
@@ -171,8 +174,18 @@ static void renderer_lazyload(renderer_t *renderer) {
     renderer->fully_loaded = true;
 }
 
+static void renderer_update_vp(renderer_t *renderer) {
+    GLint vp[4];
+    glGetIntegerv(GL_VIEWPORT, vp);
+
+    renderer->vp_x = (float)vp[0];
+    renderer->vp_y = (float)vp[1];
+    renderer->vp_width = (float)vp[2];
+    renderer->vp_heigth = (float)vp[3];
+}
+
 void renderer_add_line(renderer_t *renderer, float x1, float y1, float x2, float y2) {
-    const float HALF_WIDTH = 10.0f;
+    const float half_width = 10.0f;
 
     vec2f_t diff;
     float diff_len;
@@ -196,19 +209,32 @@ void renderer_add_line(renderer_t *renderer, float x1, float y1, float x2, float
     normal_inv.x = -normal.x;
     normal_inv.y = -normal.y;
 
-    vertices[0].x = x1 + normal.x * HALF_WIDTH;
-    vertices[0].y = y1 + normal.y * HALF_WIDTH;
-    vertices[1].x = x1 + normal_inv.x * HALF_WIDTH;
-    vertices[1].y = y1 + normal_inv.y * HALF_WIDTH;
-    vertices[2].x = x2 + normal.x * HALF_WIDTH;
-    vertices[2].y = y2 + normal.x * HALF_WIDTH;
+    vertices[0].x = x1 + normal.x * half_width;
+    vertices[0].y = y1 + normal.y * half_width;
+    vertices[1].x = x1 + normal_inv.x * half_width;
+    vertices[1].y = y1 + normal_inv.y * half_width;
+    vertices[2].x = x2 + normal.x * half_width;
+    vertices[2].y = y2 + normal.x * half_width;
 
-    vertices[3].x = x1 + normal.x * HALF_WIDTH;
-    vertices[3].y = y1 + normal.y * HALF_WIDTH;
-    vertices[4].x = x1 + normal_inv.x * HALF_WIDTH;
-    vertices[4].y = y1 + normal_inv.y * HALF_WIDTH;
-    vertices[5].x = x2 + normal_inv.x * HALF_WIDTH;
-    vertices[5].y = y2 + normal_inv.x * HALF_WIDTH;
+    vertices[3].x = x1 + normal.x * half_width;
+    vertices[3].y = y1 + normal.y * half_width;
+    vertices[4].x = x1 + normal_inv.x * half_width;
+    vertices[4].y = y1 + normal_inv.y * half_width;
+    vertices[5].x = x2 + normal_inv.x * half_width;
+    vertices[5].y = y2 + normal_inv.x * half_width;
+
+    for (int i = 0; i < 6; i++) {
+        vp_transform_inv(
+            renderer->vp_x,
+            renderer->vp_y,
+            renderer->vp_width,
+            renderer->vp_heigth,
+            vertices[i].x,
+            vertices[i].y,
+            &vertices[i].x,
+            &vertices[i].y
+        );
+    }
 
     glBufferSubData(GL_ARRAY_BUFFER, renderer->buffer_offset, sizeof(vertices), vertices);
     renderer->buffer_offset += sizeof(vertices);
@@ -220,6 +246,7 @@ void renderer_start(renderer_t *renderer) {
 
     backup_ctx(&renderer->last_ctx);
     use_ctx(&renderer->ctx);
+    renderer_update_vp(renderer);
     renderer_lazyload(renderer);
 }
 
