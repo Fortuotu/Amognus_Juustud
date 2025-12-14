@@ -45,5 +45,5 @@ void renderer_create(renderer_t *renderer);
 void renderer_destroy(renderer_t *renderer);
 
 void renderer_start(renderer_t *renderer);
-void renderer_add_line(renderer_t *renderer, float x1, float y1, float x2, float y2);
+void renderer_add_line(renderer_t *renderer, float x1, float y1, float x2, float y2, float width);
 void renderer_finish(renderer_t *renderer);

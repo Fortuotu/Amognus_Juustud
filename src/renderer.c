@@ -184,8 +184,8 @@ static void renderer_update_vp(renderer_t *renderer) {
     renderer->vp_heigth = (float)vp[3];
 }
 
-void renderer_add_line(renderer_t *renderer, float x1, float y1, float x2, float y2) {
-    const float half_width = 5.0f;
+void renderer_add_line(renderer_t *renderer, float x1, float y1, float x2, float y2, float width) {
+    const float half_width = width / 2.0f;
 
     vec2f_t diff;
     float diff_len;

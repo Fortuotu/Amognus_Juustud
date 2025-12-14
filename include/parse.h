@@ -32,5 +32,5 @@ typedef struct player_s {
     char role_str[64];
 } player_t;
 
-void parse_player(const void *base, const void *raw, player_t *parsed);
-void parse_player_id(const void *base, const void *raw, uint8_t *parsed);
+void parse_player(const void *control, player_t *parsed);
+void parse_player_id(const void *control, uint8_t *parsed);

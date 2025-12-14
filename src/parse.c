@@ -1,12 +1,22 @@
 #include "parse.h"
 
+#include "offsets.h"
+#include "utils.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 
-static void get_position(const void *base, const void *rb, vec2f_t *ret) {
-    const void *rb_get_pos = base + 0x1F798C0;
+static void get_position(const void *rb, vec2f_t *ret) {
+    if (rb == NULL) {
+        ret->x = 0.0f;
+        ret->y = 0.0f;
+
+        return;
+    }
+
+    const void *rb_get_pos = find_gameassembly() + RIGIDBODY_2D_GET_POSITION;
 
     asm volatile (
         ".intel_syntax noprefix\n"
@@ -22,8 +32,15 @@ static void get_position(const void *base, const void *rb, vec2f_t *ret) {
     );
 }
 
-static void get_name(const void *base, const void *info, char *name, int *len) {
-    const void *info_get_name = base + 0x7D6160;
+static void get_name(const void *info, char *name, int *len) {
+    if (info == NULL) {
+        name[0] = '\0';
+        *len = 0;
+
+        return;
+    }
+
+    const void *info_get_name = find_gameassembly() + NETWORKED_PLAYER_INFO_GET_PLAYER_NAME;
 
     void *sys_str = NULL;
 
@@ -80,34 +97,32 @@ static void str_for_role(player_role_t role, char *out) {
     strcpy(out, s);
 }
 
-static void get_role(const void *base, const void *info, player_role_t *ret, char *role_str) {
-    (void)base;
+static void get_role(const void *info, player_role_t *ret, char *role_str) {
+    if (info == NULL) {
+        role_str[0] = '\0';
+        *ret = -1;
 
-    *ret = *(uint16_t *)(info + 0x38);
-    str_for_role(*ret, role_str);
-}
-
-static void get_id(const void *base, const void *raw, uint8_t *id) {
-    (void)base;
-
-    *id = *(uint8_t *)(raw + 0x28);
-}
-
-void parse_player(const void *base, const void *raw, player_t *parsed) {
-    void *info = *(void **)(raw + 0x58);
-    void *rb = *(void **)(raw + 0xD0);
-
-    if (rb == NULL || info == NULL) {
-        memset(parsed, 0, sizeof(player_t));
         return;
     }
 
-    get_id(base, raw, &parsed->id);
-    get_position(base, rb, &parsed->pos);
-    get_name(base, info, parsed->name, &parsed->name_len);
-    get_role(base, info, &parsed->role, parsed->role_str);
+    *ret = *(uint16_t *)(info + NETWORKED_PLAYER_INFO_ROLE);
+    str_for_role(*ret, role_str);
 }
 
-void parse_player_id(const void *base, const void *raw, uint8_t *parsed) {
-    get_id(base, raw, parsed);
+static void get_id(const void *control, uint8_t *id) {
+    *id = *(uint8_t *)(control + PLAYER_CONTROL_PLAYER_ID);
+}
+
+void parse_player(const void *control, player_t *parsed) {
+    void *info = *(void **)(control + PLAYER_CONTROL_NETWORKED_PLAYER_INFO);
+    void *rb = *(void **)(control + PLAYER_CONTROL_RIGIDBODY_2D);
+
+    get_id(control, &parsed->id);
+    get_position(rb, &parsed->pos);
+    get_name(info, parsed->name, &parsed->name_len);
+    get_role(info, &parsed->role, parsed->role_str);
+}
+
+void parse_player_id(const void *control, uint8_t *parsed) {
+    get_id(control, parsed);
 }

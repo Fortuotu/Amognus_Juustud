@@ -2,6 +2,7 @@
 #include "override.h"
 #include "renderer.h"
 #include "io.h"
+#include "offsets.h"
 
 #include <stdio.h>
 #include <dlfcn.h>
@@ -11,22 +12,31 @@ typedef struct hooks_s {
     uint8_t enabled;
 
     void *glx_so;
+
     void (*glXSwapBuffers_orig)(void *, void *);
     int glXSwapBuffers_idx;
 
+    void (*player_update_orig)(void *);
+    int player_update_idx;
+
     void (*render_hook)(void);
+    void (*player_update_hook)(void *);
 } hooks_t;
 
 static hooks_t hooks = { 0 };
 
 static void glXSwapBuffers_override(void *dpy, void *drawable);
 
-void hooks_init(void (*render_hook)(void)) {
+void hooks_init(void (*render_hook)(void), void (*player_update_hook)(void *)) {
     hooks.glx_so = dlopen("libGLX.so.0", RTLD_LAZY);
+
     hooks.glXSwapBuffers_orig = dlsym(hooks.glx_so, "glXSwapBuffers");
     hooks.glXSwapBuffers_idx = override_install(hooks.glXSwapBuffers_orig, glXSwapBuffers_override);
-
     hooks.render_hook = render_hook;
+
+    hooks.player_update_orig = find_gameassembly() + PLAYER_CONTROL_FIXED_UPDATE;
+    hooks.player_update_idx = override_install(hooks.player_update_orig, player_update_override);
+    hooks.player_update_hook = player_update_hook;
 
     hooks.loaded = true;
 }
@@ -51,5 +61,14 @@ static void glXSwapBuffers_override(void *dpy, void *drawable) {
 
     override_disable(hooks.glXSwapBuffers_idx);
     hooks.glXSwapBuffers_orig(dpy, drawable);
+    override_enable(hooks.glXSwapBuffers_idx);
+}
+
+__attribute__((ms_abi))
+static void player_update_override(void *control) {
+    hooks.player_update_hook(control);
+
+    override_disable(hooks.glXSwapBuffers_idx);
+    hooks.player_update_orig(control);
     override_enable(hooks.glXSwapBuffers_idx);
 }
