@@ -185,7 +185,7 @@ static void renderer_update_vp(renderer_t *renderer) {
 }
 
 void renderer_add_line(renderer_t *renderer, float x1, float y1, float x2, float y2) {
-    const float half_width = 10.0f;
+    const float half_width = 5.0f;
 
     vec2f_t diff;
     float diff_len;
@@ -198,14 +198,12 @@ void renderer_add_line(renderer_t *renderer, float x1, float y1, float x2, float
     diff.x = x2 - x1;
     diff.y = y2 - y1;
     diff_len = sqrtf(diff.x * diff.x + diff.y * diff.y);
-
     if (diff_len < 0.1f) {
         return;
     }
 
     normal.x = -diff.y / diff_len;
     normal.y = diff.x / diff_len;
-
     normal_inv.x = -normal.x;
     normal_inv.y = -normal.y;
 
@@ -214,14 +212,13 @@ void renderer_add_line(renderer_t *renderer, float x1, float y1, float x2, float
     vertices[1].x = x1 + normal_inv.x * half_width;
     vertices[1].y = y1 + normal_inv.y * half_width;
     vertices[2].x = x2 + normal.x * half_width;
-    vertices[2].y = y2 + normal.x * half_width;
-
-    vertices[3].x = x1 + normal.x * half_width;
-    vertices[3].y = y1 + normal.y * half_width;
-    vertices[4].x = x1 + normal_inv.x * half_width;
-    vertices[4].y = y1 + normal_inv.y * half_width;
-    vertices[5].x = x2 + normal_inv.x * half_width;
-    vertices[5].y = y2 + normal_inv.x * half_width;
+    vertices[2].y = y2 + normal.y * half_width;
+    vertices[3].x = x2 + normal.x * half_width;
+    vertices[3].y = y2 + normal.y * half_width;
+    vertices[4].x = x2 + normal_inv.x * half_width;
+    vertices[4].y = y2 + normal_inv.y * half_width;
+    vertices[5].x = x1 + normal_inv.x * half_width;
+    vertices[5].y = y1 + normal_inv.y * half_width;
 
     for (int i = 0; i < 6; i++) {
         vp_transform_inv(

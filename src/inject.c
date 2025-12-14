@@ -71,7 +71,7 @@ void pcfu_override(void *self) {
 static void render_overlay() {
     renderer_start(&renderer);
 
-    renderer_add_line(&renderer, 0.3f, 0.4f, 0.8f, 0.7f);
+    renderer_add_line(&renderer, 50.0f, 20.0f, 1200.0f, 800.0f);
 
     renderer_finish(&renderer);
 }

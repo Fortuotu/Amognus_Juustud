@@ -52,7 +52,7 @@ void vp_transform(
     *y_w = y + ny * height;
 }
 
-static void vp_transform_inv(
+void vp_transform_inv(
     const float x,
     const float y,
     const float width,
