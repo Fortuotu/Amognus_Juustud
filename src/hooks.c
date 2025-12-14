@@ -6,16 +6,23 @@
 #include <stdio.h>
 #include <dlfcn.h>
 
+typedef struct hooks_s {
+    uint8_t inited;
+
+    void (*render_hook)(void);
+} hooks_t;
+
+static hooks_t hooks;
+
 static int inited = 0;
 
 static int glXSwapBuffers_idx;
 static void (*glXSwapBuffers_orig)(void *, void *);
 
-static renderer_t renderer;
 
 void __glXSwapBuffers_override(void *dpy, void *drawable);
 
-void hooks_init() {
+void hooks_init(void (*render_hook)(void)) {
     void *glx_so = dlopen("libGLX.so.0", RTLD_LAZY);
     glXSwapBuffers_orig = dlsym(glx_so, "glXSwapBuffers");
     glXSwapBuffers_idx = override_install(glXSwapBuffers_orig, __glXSwapBuffers_override);
@@ -43,13 +50,7 @@ void hooks_toggle() {
 }
 
 void __glXSwapBuffers_override(void *dpy, void *drawable) {
-    static int i = 0;
-    static char buf[512];
 
-    sprintf(buf, "#%d glXSwapBuffers(%p, %p)\n", i++, dpy, drawable);
-    io_sendstr(buf);
-
-    render_scene(&renderer);
 
     override_disable(glXSwapBuffers_idx);
     glXSwapBuffers_orig(dpy, drawable);

@@ -1,4 +1,6 @@
 #pragma once
 
-void hooks_init();
+#include <stdint.h>
+
+void hooks_init(void (*render_hook)(void));
 void hooks_toggle();

@@ -6,6 +6,24 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+void renderer_create(renderer_t *renderer) {
+    renderer->pointers_loaded = false;
+    renderer->fully_loaded = false;
+
+    renderer->buffer_offset = 0;
+    renderer->draw_count = 0;
+}
+
+void renderer_destroy(renderer_t *renderer) {
+    if (!renderer->fully_loaded) {
+        return;
+    }
+
+    glDeleteVertexArrays(1, &renderer->ctx.vao);
+    glDeleteBuffers(1, &renderer->ctx.vao);
+    glDeleteProgram(&renderer->ctx.vao);
+}
+
 static char *read_file(const char *filename) {
     char *buffer;
     long length;
@@ -35,7 +53,7 @@ static char *read_file(const char *filename) {
     return buffer;
 }
 
-static int compile_shader(char *vertex_filename, char *fragment_filename, int *success) {
+static GLuint compile_shader(char *vertex_filename, char *fragment_filename, int *success) {
     char *vertex_code = read_file(vertex_filename);
     char *fragment_code = read_file(fragment_filename);
 
@@ -43,7 +61,7 @@ static int compile_shader(char *vertex_filename, char *fragment_filename, int *s
     GLuint vertex;
     GLuint fragment;
     GLuint id;
-    GLint params = 0;
+    GLint params;
     
     vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, (char const * const *)&vertex_code, NULL);
@@ -93,7 +111,35 @@ static int compile_shader(char *vertex_filename, char *fragment_filename, int *s
     return id;
 }
 
-static void init_renderer(renderer_t *renderer) {
+static void backup_ctx(gl_context_t *ctx) {
+    glGetIntegerv(GL_CURRENT_PROGRAM, &ctx->shader);
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &ctx->vao);
+    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &ctx->vbo);
+    ctx->depth_test = glIsEnabled(GL_DEPTH_TEST);
+}
+
+static void use_ctx(const gl_context_t *ctx) {
+    glUseProgram(ctx->shader);
+    glBindVertexArray(ctx->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, ctx->vbo);
+    if (ctx->depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+}
+
+static void renderer_lazyload_pointers(renderer_t *renderer) {
+    if (renderer->pointers_loaded) {
+        return;
+    }
+    
+    gladLoadGL();
+
+    renderer->pointers_loaded = true;
+}
+
+static void renderer_lazyload(renderer_t *renderer) {
+    if (renderer->fully_loaded) {
+        return;
+    }
+
     int success;
 
     if (!gladLoadGL()) {
@@ -102,73 +148,85 @@ static void init_renderer(renderer_t *renderer) {
         return;
     }
 
-    GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    GLint last_array_buffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-    GLint last_vertex_array; glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
-    GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
+    gl_context_t last;
+    backup_ctx(&last);
 
-    GLfloat vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-        0.5f, 0.5f, 0.0f,
-        -0.5f, 0.5f, 0.0f,
-
-        -0.5f, -0.5f, 0.0f,
-        0.5f, 0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f
-    };
-
-    renderer->shader = compile_shader("/home/ott/Documents/Amognus_Juustud/shaders/shader.vs", "/home/ott/Documents/Amognus_Juustud/shaders/shader.fs", &success);
+    renderer->ctx.shader = compile_shader("/home/ott/Documents/Amognus_Juustud/shaders/shader.vs", "/home/ott/Documents/Amognus_Juustud/shaders/shader.fs", &success);
     if (!success) {
         io_sendstr("Could not create shader\n");
+
         return;
     }
 
-    glGenVertexArrays(1, &renderer->vao);
-    glBindVertexArray(renderer->vao);
-    glGenBuffers(1, &renderer->vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, renderer->vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 3, (void*)(sizeof(GLfloat) * 0));
+    glGenVertexArrays(1, &renderer->ctx.vao);
+    glBindVertexArray(renderer->ctx.vao);
+    glGenBuffers(1, &renderer->ctx.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->ctx.vbo);
+    glBufferData(GL_ARRAY_BUFFER, 4096, NULL, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, sizeof(vertex_t) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex_t), (void *)(sizeof(float) * 0));
     glEnableVertexAttribArray(0);
 
-    glUseProgram(last_program);
-    glBindVertexArray(last_vertex_array);
-    glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
-    if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+    glBindVertexArray(0);
 
-    renderer->inited = 1;
+    renderer->fully_loaded = true;
 }
 
-void render_new(renderer_t *renderer) {
-    renderer->inited = 0;
-}
+void renderer_add_line(renderer_t *renderer, float x1, float y1, float x2, float y2) {
+    const float HALF_WIDTH = 10.0f;
 
-void render_scene(renderer_t *renderer) {
-    static int i = 0;
-    static char buf[512];
+    vec2f_t diff;
+    float diff_len;
 
-    if (!renderer->inited) {
-        sprintf(buf, "#%d Init Renderer...\n", i++);
-        io_sendstr(buf);
-        init_renderer(renderer);
-        if (!renderer->inited) {
-            io_sendstr("Renderer init failed, skipping overlay\n");
-            return;
-        }
+    vec2f_t normal;
+    vec2f_t normal_inv;
+
+    vertex_t vertices[6];
+
+    diff.x = x2 - x1;
+    diff.y = y2 - y1;
+    diff_len = sqrtf(diff.x * diff.x + diff.y * diff.y);
+
+    if (diff_len < 0.1f) {
+        return;
     }
 
-    GLint last_program; glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    GLint last_array_buffer; glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-    GLint last_vertex_array; glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
-    GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
+    normal.x = -diff.y / diff_len;
+    normal.y = diff.x / diff_len;
 
-    glDisable(GL_DEPTH_TEST);
-    glUseProgram(renderer->shader);
-    glBindVertexArray(renderer->vao);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    normal_inv.x = -normal.x;
+    normal_inv.y = -normal.y;
 
-    glUseProgram(last_program);
-    glBindVertexArray(last_vertex_array);
-    glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
-    if (last_enable_depth_test) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+    vertices[0].x = x1 + normal.x * HALF_WIDTH;
+    vertices[0].y = y1 + normal.y * HALF_WIDTH;
+    vertices[1].x = x1 + normal_inv.x * HALF_WIDTH;
+    vertices[1].y = y1 + normal_inv.y * HALF_WIDTH;
+    vertices[2].x = x2 + normal.x * HALF_WIDTH;
+    vertices[2].y = y2 + normal.x * HALF_WIDTH;
+    
+    vertices[3].x = x1 + normal.x * HALF_WIDTH;
+    vertices[3].y = y1 + normal.y * HALF_WIDTH;
+    vertices[4].x = x1 + normal_inv.x * HALF_WIDTH;
+    vertices[4].y = y1 + normal_inv.y * HALF_WIDTH;
+    vertices[5].x = x2 + normal_inv.x * HALF_WIDTH;
+    vertices[5].y = y2 + normal_inv.x * HALF_WIDTH;
+
+    glBufferSubData(GL_ARRAY_BUFFER, renderer->buffer_offset, sizeof(vertices), vertices);
+    renderer->buffer_offset += sizeof(vertices);
+    renderer->draw_count += 6;
+}
+
+void renderer_start(renderer_t *renderer) {
+    renderer_lazyload_pointers(renderer);
+
+    backup_ctx(&renderer->last_ctx);
+    use_ctx(&renderer->ctx);
+    renderer_lazyload(renderer);
+}
+
+void renderer_finish(renderer_t *renderer) {
+    glDrawArrays(GL_TRIANGLES, 0, renderer->draw_count);
+    renderer->buffer_offset = 0;
+    renderer->draw_count = 0;
+
+    use_ctx(&renderer->last_ctx);
 }
