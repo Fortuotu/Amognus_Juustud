@@ -19,12 +19,14 @@ typedef struct hooks_s {
 
 static hooks_t hooks = { 0 };
 
-void glXSwapBuffers_override(void *dpy, void *drawable);
+static void glXSwapBuffers_override(void *dpy, void *drawable);
 
 void hooks_init(void (*render_hook)(void)) {
     hooks.glx_so = dlopen("libGLX.so.0", RTLD_LAZY);
     hooks.glXSwapBuffers_orig = dlsym(hooks.glx_so, "glXSwapBuffers");
     hooks.glXSwapBuffers_idx = override_install(hooks.glXSwapBuffers_orig, glXSwapBuffers_override);
+
+    hooks.render_hook = render_hook;
 
     hooks.loaded = true;
 }
@@ -48,6 +50,6 @@ static void glXSwapBuffers_override(void *dpy, void *drawable) {
     hooks.render_hook();
 
     override_disable(hooks.glXSwapBuffers_idx);
-    glXSwapBuffers_orig(dpy, drawable);
+    hooks.glXSwapBuffers_orig(dpy, drawable);
     override_enable(hooks.glXSwapBuffers_idx);
 }

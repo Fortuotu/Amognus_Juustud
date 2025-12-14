@@ -20,8 +20,8 @@ void renderer_destroy(renderer_t *renderer) {
     }
 
     glDeleteVertexArrays(1, &renderer->ctx.vao);
-    glDeleteBuffers(1, &renderer->ctx.vao);
-    glDeleteProgram(&renderer->ctx.vao);
+    glDeleteBuffers(1, &renderer->ctx.vbo);
+    glDeleteProgram(renderer->ctx.shader);
 }
 
 static char *read_file(const char *filename) {
@@ -113,8 +113,8 @@ static GLuint compile_shader(char *vertex_filename, char *fragment_filename, int
 
 static void backup_ctx(gl_context_t *ctx) {
     glGetIntegerv(GL_CURRENT_PROGRAM, &ctx->shader);
-    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &ctx->vao);
-    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &ctx->vbo);
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, (GLint *)&ctx->vao);
+    glGetIntegerv(GL_ARRAY_BUFFER_BINDING, (GLint *)&ctx->vbo);
     ctx->depth_test = glIsEnabled(GL_DEPTH_TEST);
 }
 
@@ -202,7 +202,7 @@ void renderer_add_line(renderer_t *renderer, float x1, float y1, float x2, float
     vertices[1].y = y1 + normal_inv.y * HALF_WIDTH;
     vertices[2].x = x2 + normal.x * HALF_WIDTH;
     vertices[2].y = y2 + normal.x * HALF_WIDTH;
-    
+
     vertices[3].x = x1 + normal.x * HALF_WIDTH;
     vertices[3].y = y1 + normal.y * HALF_WIDTH;
     vertices[4].x = x1 + normal_inv.x * HALF_WIDTH;

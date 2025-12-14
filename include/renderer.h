@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdbool.h>
 #include <math.h>
 
@@ -9,7 +10,7 @@
 typedef struct gl_context_s {
     GLuint vbo;
     GLuint vao;
-    GLuint shader;
+    GLint shader;
     GLboolean depth_test;
 } gl_context_t;
 
