@@ -1,8 +1,15 @@
 #pragma once
 
-#include "parse.h"
-
 #include <stdint.h>
+
+#include "types.h"
+#include "game_internal.h"
+
+typedef struct player_s {
+    uint8_t id;
+    static_string_t name;
+    player_role_t role;
+} player_t;
 
 void game_init();
 

@@ -9,12 +9,12 @@
 
 #include "io.h"
 #include "override.h"
-#include "parse.h"
 #include "hooks.h"
 #include "renderer.h"
 #include "utils.h"
 #include "offsets.h"
-#include "game.h"
+#include "game_internal.h"
+#include "game_hooks.h"
 
 static renderer_t renderer = { 0 };
 
@@ -77,7 +77,7 @@ void *main_thread(void *arg) {
             player_t *players = game_get_players(&len);
 
             for (int i = 0; i < len; i++) {
-                sprintf(buf, "Player: %s, Role: %s\n", players[i].name, players[i].role_str);
+                sprintf(buf, "Player: %s, Role: %s\n", players[i].name.data, internal_string_for_role(players[i].role));
                 io_sendstr(buf);
             }
         }
