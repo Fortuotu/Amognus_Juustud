@@ -7,31 +7,22 @@
 #include <string.h>
 #include <pthread.h>
 
+#include "io.h"
+
 #define MAX_PLAYERS 32
 #define MAX_TIMESTAMP_DIFF 5
 
 typedef struct player_list_s {
-    uint32_t len;
-    uint32_t frame_count;
+    int len;
+    int frame_count;
     player_t player[MAX_PLAYERS];
     uint32_t timestamp[MAX_PLAYERS];
 } player_list_t;
 
-static uint8_t inited = false;
-
-static pthread_mutex_t list_mutex = { 0 };
 static player_list_t list = { 0 };
 
-void lock_players() {
-    pthread_mutex_lock(&list_mutex);
-}
-
-void unlock_players() {
-    pthread_mutex_unlock(&list_mutex);
-}
-
-static uint32_t find_player_idx(player_t *player, uint8_t *success) {
-    for (uint32_t i = 0; i < list.len; i++) {
+static int find_player_idx(player_t *player, int *success) {
+    for (int i = 0; i < list.len; i++) {
         
         if (list.player[i].id == player->id) {
             *success = true;
@@ -43,7 +34,7 @@ static uint32_t find_player_idx(player_t *player, uint8_t *success) {
     return 0;
 }
 
-static void remove_player(uint32_t idx) {
+static void remove_player(int idx) {
     if (idx == list.len - 1) {
         list.len--;
 
@@ -56,13 +47,15 @@ static void remove_player(uint32_t idx) {
     list.len--;
 }
 
-void player_update(void *control) {
-    uint8_t success;
+void game_init() {
+    memset(&list, 0, sizeof(list));
+}
+
+void game_hook_player_update(void *control) {
+    int success;
 
     player_t player;
-    uint32_t player_idx;
-
-    lock_players();
+    int player_idx;
 
     parse_player(control, &player);
 
@@ -71,21 +64,22 @@ void player_update(void *control) {
         player_idx = list.len++;
     }
 
-    if (list.frame_count++ - list.timestamp[player_idx] >= MAX_TIMESTAMP_DIFF) {
-        remove_player(player_idx);
-    }
-    else {
-        list.player[player_idx] = player;
-        list.timestamp[player_idx] = list.frame_count; 
-    }
-
-    unlock_players();
+    list.player[player_idx] = player;
+    list.timestamp[player_idx] = list.frame_count;
 }
 
-uint32_t get_player_count() {
-    return list.len;
+void game_hook_end_frame() {
+    for (int i = list.len - 1; i >= 0; i--) {
+        if (list.frame_count - list.timestamp[i] >= MAX_TIMESTAMP_DIFF) {
+            remove_player(i);
+        }
+    }
+
+    list.frame_count++;
 }
 
-player_t *get_player(uint32_t idx) {
-    return &list.player[idx];
+player_t *game_get_players(int *len) {
+    *len = list.len;
+
+    return list.player;
 }

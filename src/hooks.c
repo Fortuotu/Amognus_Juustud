@@ -26,6 +26,7 @@ typedef struct hooks_s {
 static hooks_t hooks = { 0 };
 
 static void glXSwapBuffers_override(void *dpy, void *drawable);
+static void player_update_override(void *control);
 
 void hooks_init(void (*render_hook)(void), void (*player_update_hook)(void *)) {
     hooks.glx_so = dlopen("libGLX.so.0", RTLD_LAZY);
@@ -41,19 +42,23 @@ void hooks_init(void (*render_hook)(void), void (*player_update_hook)(void *)) {
     hooks.loaded = true;
 }
 
-void hooks_toggle() {
+uint8_t hooks_toggle() {
     if (!hooks.loaded) {
-        return;
+        return false;
     }
 
     if (!hooks.enabled) {
         override_enable(hooks.glXSwapBuffers_idx);
+        override_enable(hooks.player_update_idx);
     }
     else {
         override_disable(hooks.glXSwapBuffers_idx);
+        override_disable(hooks.player_update_idx);
     }
 
     hooks.enabled = !hooks.enabled;
+
+    return hooks.enabled;
 }
 
 static void glXSwapBuffers_override(void *dpy, void *drawable) {
@@ -68,7 +73,7 @@ __attribute__((ms_abi))
 static void player_update_override(void *control) {
     hooks.player_update_hook(control);
 
-    override_disable(hooks.glXSwapBuffers_idx);
+    override_disable(hooks.player_update_idx);
     hooks.player_update_orig(control);
-    override_enable(hooks.glXSwapBuffers_idx);
+    override_enable(hooks.player_update_idx);
 }

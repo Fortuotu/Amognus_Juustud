@@ -15,16 +15,6 @@ typedef struct gl_context_s {
     GLboolean depth_test;
 } gl_context_t;
 
-typedef struct vec2f_s {
-    float x;
-    float y;
-} vec2f_t;
-
-typedef struct vertex_s {
-    float x;
-    float y;
-} vertex_t;
-
 typedef struct renderer_s {
     gl_context_t ctx;
     gl_context_t last_ctx;

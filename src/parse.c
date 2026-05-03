@@ -16,7 +16,7 @@ static void get_position(const void *rb, vec2f_t *ret) {
         return;
     }
 
-    const void *rb_get_pos = find_gameassembly() + RIGIDBODY_2D_GET_POSITION;
+    const void *rb_get_pos = find_gameassembly() + RIGIDBODY_2D_GET_POSITION_INJECTED;
 
     asm volatile (
         ".intel_syntax noprefix\n"

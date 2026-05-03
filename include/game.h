@@ -4,10 +4,9 @@
 
 #include <stdint.h>
 
-void player_update(void *control);
+void game_init();
 
-void lock_players();
-void unlock_players();
+void game_hook_player_update(void *control);
+void game_hook_end_frame();
 
-uint32_t get_player_count();
-player_t *get_player(uint32_t idx);
+player_t *game_get_players(int *len);

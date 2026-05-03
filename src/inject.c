@@ -20,15 +20,15 @@ static renderer_t renderer = { 0 };
 
 static void render_overlay() {
     renderer_start(&renderer);
-    lock_players();
 
-    for (uint32_t i = 0; i < get_player_count(); i++) {
-        player_t *player = get_player(i);
-        
-    }
+    renderer_add_line(&renderer, 25.0f, 25.0f, 125.0f, 25.0f, 15.0f);
 
-    unlock_players();
     renderer_finish(&renderer);
+    game_hook_end_frame();
+} 
+
+static void player_update(void *control) {
+    game_hook_player_update(control);
 }
 
 void *main_thread(void *arg) {
@@ -55,17 +55,31 @@ void *main_thread(void *arg) {
     while (1) {
         io_recvstr(buf);
 
-        if (strcmp(buf, "install") == 0) {
+        if (strcmp(buf, "init") == 0) {
+            game_init();
             hooks_init(render_overlay, player_update);
 
-            sprintf(buf, "Installed hooks, gameassembly base: %p\n", find_gameassembly());
+            sprintf(buf, "Initialized hooks, gameassembly base: %p\n", find_gameassembly());
             io_sendstr(buf);
         }
         else if (strcmp(buf, "toggle") == 0) {
-            hooks_toggle();
+            uint8_t enabled = hooks_toggle();
+            if (enabled) {
+                sprintf(buf, "Enabled hooks\n");
+                io_sendstr(buf);
+            } else {
+                sprintf(buf, "Disabled hooks\n");
+                io_sendstr(buf);
+            }
+        }
+        else if (strcmp(buf, "players") == 0) {
+            int len = 0;
+            player_t *players = game_get_players(&len);
 
-            sprintf(buf, "Toggled hooks\n");
-            io_sendstr(buf);
+            for (int i = 0; i < len; i++) {
+                sprintf(buf, "Player: %s, Role: %s\n", players[i].name, players[i].role_str);
+                io_sendstr(buf);
+            }
         }
     }
 }

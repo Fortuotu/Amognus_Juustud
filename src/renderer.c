@@ -6,6 +6,16 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+typedef struct vec2f_s {
+    float x;
+    float y;
+} vec2f_t;
+
+typedef struct vertex_s {
+    float x;
+    float y;
+} vertex_t;
+
 void renderer_create(renderer_t *renderer) {
     renderer->pointers_loaded = false;
     renderer->fully_loaded = false;

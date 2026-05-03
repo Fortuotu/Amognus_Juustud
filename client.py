@@ -25,7 +25,7 @@ def find_amongus_pid(cmd: str):
     
     return None
 
-path = "Z:\\home\\ott\\.local\\share\\Steam\\steamapps\\common\\Among Us\\Among Us.exe"
+path = "S:\common\Among Us\Among Us.exe"
 pid = find_amongus_pid(path)
 
 if not pid:
