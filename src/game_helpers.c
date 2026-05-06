@@ -1,4 +1,4 @@
-#include "game_hooks.h"
+#include "game_helpers.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -19,6 +19,7 @@ typedef struct player_list_s {
 } player_list_t;
 
 static player_list_t list = { 0 };
+static camera_t main_camera = { 0 };
 
 static void parse_player(void *control, player_t *player) {
     player_control_t parsed_control = { 0 };
@@ -62,8 +63,29 @@ static void remove_player(int idx) {
     list.len--;
 }
 
-void game_init() {
+void game_helpers_init() {
     memset(&list, 0, sizeof(list));
+}
+
+void game_hook_start_frame() {
+    void *camera_raw = NULL;
+
+    internal_static_call_get_main_camera(&camera_raw);
+
+    internal_call_camera_get_projection_matrix_injected(camera_raw, &main_camera.proj_mat);
+    internal_call_camera_get_view_matrix_injected(camera_raw, &main_camera.view_mat);
+
+    main_camera.raw = camera_raw;
+}
+
+void game_hook_end_frame() {
+    for (int i = list.len - 1; i >= 0; i--) {
+        if (list.frame_count - list.timestamp[i] >= MAX_TIMESTAMP_DIFF) {
+            remove_player(i);
+        }
+    }
+
+    list.frame_count++;
 }
 
 void game_hook_player_update(void *control) {
@@ -83,18 +105,16 @@ void game_hook_player_update(void *control) {
     list.timestamp[player_idx] = list.frame_count;
 }
 
-void game_hook_end_frame() {
-    for (int i = list.len - 1; i >= 0; i--) {
-        if (list.frame_count - list.timestamp[i] >= MAX_TIMESTAMP_DIFF) {
-            remove_player(i);
-        }
-    }
-
-    list.frame_count++;
-}
-
 player_t *game_get_players(int *len) {
     *len = list.len;
 
     return list.player;
+}
+
+camera_t *game_get_main_camera() {
+    return &main_camera;
+}
+
+vec2f_t game_world_to_screen(vec2f_t point) {
+    return point;
 }

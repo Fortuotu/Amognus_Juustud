@@ -14,7 +14,7 @@
 #include "utils.h"
 #include "offsets.h"
 #include "game_internal.h"
-#include "game_hooks.h"
+#include "game_helpers.h"
 
 typedef enum user_request_e {
     NO_REQUEST,
@@ -33,6 +33,12 @@ static void show_players_request() {
     int len = 0;
     player_t *players = game_get_players(&len);
 
+    if (len == 0) {
+        io_sendstr("Not in game\n");
+
+        return;
+    }
+
     for (int i = 0; i < len; i++) {
         sprintf(buf, "Player: %s, Role: %s\n", players[i].name.data, internal_string_for_role(players[i].role));
         io_sendstr(buf);
@@ -44,6 +50,12 @@ static void show_impostors_request() {
 
     int len = 0;
     player_t *players = game_get_players(&len);
+
+    if (len == 0) {
+        io_sendstr("Not in game\n");
+
+        return;
+    }
 
     for (int i = 0; i < len; i++) {
         if (players[i].role != IMPOSTOR &&
@@ -63,30 +75,23 @@ static void show_impostors_request() {
 static void show_camera_request() {
     char buf[512] = { 0 };
 
-    void *camera = NULL;
-    mat4x4f_t proj_mat = { 0 };
-    mat4x4f_t view_mat = { 0 };
+    camera_t *camera = game_get_main_camera();
 
-    internal_static_call_get_main_camera(&camera);
-
-    internal_call_camera_get_projection_matrix_injected(camera, &proj_mat);
-    internal_call_camera_get_view_matrix_injected(camera, &view_mat);
-
-    sprintf(buf, "Main Camera -> %p\n", camera);
+    sprintf(buf, "Main Camera -> %p\n", camera->raw);
     io_sendstr(buf);
 
     io_sendstr("\n");
 
     io_sendstr("Projection Matrix:\n");
 
-    sprintf_mat4x4(buf, &proj_mat);
+    sprintf_mat4x4(buf, &camera->proj_mat);
     io_sendstr(buf);
 
     io_sendstr("\n");
 
     io_sendstr("View Matrix:\n");
 
-    sprintf_mat4x4(buf, &view_mat);
+    sprintf_mat4x4(buf, &camera->view_mat);
     io_sendstr(buf);
 }
 
@@ -109,6 +114,8 @@ static void handle_user_request() {
 }
 
 static void render_overlay() {
+    game_hook_start_frame();
+
     handle_user_request();
 
     renderer_start(&renderer);
@@ -150,7 +157,7 @@ void *main_thread(void *arg) {
 
         if (strcmp(buf, "init") == 0) {
             if (!inited) {
-                game_init();
+                game_helpers_init();
                 hooks_init(render_overlay, player_update);
 
                 sprintf(buf, "Initialized hooks, gameassembly base: %p\n", find_gameassembly());
@@ -158,7 +165,7 @@ void *main_thread(void *arg) {
 
                 inited = true;
             } else {
-                sprintf(buf, "Already initialized!");
+                sprintf(buf, "Already initialized!\n");
                 io_sendstr(buf);
             }
 
