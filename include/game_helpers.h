@@ -27,6 +27,7 @@ void game_hook_end_frame();
 void game_hook_player_update(void *control);
 
 player_t *game_get_players(int *len);
+player_t *game_get_local_player();
 camera_t *game_get_main_camera();
 
 vec2f_t game_world_to_screen(vec2f_t point);

@@ -20,6 +20,7 @@ typedef enum user_request_e {
     NO_REQUEST,
     SHOW_PLAYERS,
     SHOW_IMPOSTORS,
+    SHOW_LOCAL_PLAYER,
     SHOW_CAMERA,
     TOGGLE_SPIDER
 } user_request_t;
@@ -43,7 +44,7 @@ static void show_players_request() {
     }
 
     for (int i = 0; i < len; i++) {
-        sprintf(buf, "Player: %s, Role: %s, Pos: (%f, %f)\n", players[i].name.data, internal_string_for_role(players[i].role), players[i].pos.x, players[i].pos.y);
+        sprintf(buf, "Player: %s, Role: %s\n", players[i].name.data, internal_string_for_role(players[i].role));
         io_sendstr(buf);
     }
 }
@@ -75,6 +76,24 @@ static void show_impostors_request() {
     }
 }
 
+static void show_local_player() {
+    char buf[512] = { 0 };
+
+    int len = 0;
+    (void)game_get_players(&len);
+
+    if (len == 0) {
+        io_sendstr("Not in game\n");
+
+        return;
+    }
+
+    player_t *local_player = game_get_local_player();
+
+    sprintf(buf, "Player: %s, Role: %s\n", local_player->name.data, internal_string_for_role(local_player->role));
+    io_sendstr(buf);
+}
+
 static void show_camera_request() {
     char buf[512] = { 0 };
 
@@ -103,8 +122,7 @@ static void toggle_spider_request() {
 
     if (spider_enabled) {
         io_sendstr("Enabled spider\n");
-    }
-    else {
+    } else {
         io_sendstr("Disabled spider\n");
     }
 }
@@ -120,6 +138,9 @@ static void handle_user_request() {
         case SHOW_CAMERA:
             show_camera_request();
             break;
+        case SHOW_LOCAL_PLAYER:
+            show_local_player();
+            break;
         case TOGGLE_SPIDER:
             toggle_spider_request();
             break;
@@ -131,14 +152,26 @@ static void handle_user_request() {
 }
 
 static void spider() {
+    const float SPIDER_LINE_WIDTH = 2.0f;
+
     int len = 0;
     player_t *players = game_get_players(&len);
 
-    for (int i = 0; i < len; i++) {
-        vec2f_t zero_zero_screen = game_world_to_screen((vec2f_t){ .x = 0.0f, .y = 0.0f });
-        vec2f_t player_screen = game_world_to_screen(players[i].pos);
+    if (len == 0) { return; }
 
-        renderer_add_line(&renderer, player_screen.x, player_screen.y, zero_zero_screen.x, zero_zero_screen.y, 3.0f);
+    player_t *local_player = game_get_local_player();
+    player_t *other_player = NULL;
+
+    vec2f_t local_player_screen = game_world_to_screen(local_player->pos);
+
+    for (int i = 0; i < len; i++) {
+        other_player = &players[i];
+
+        if (local_player->id == other_player->id) { continue; }
+
+        vec2f_t other_player_screen = game_world_to_screen(other_player->pos);
+
+        renderer_add_line(&renderer, local_player_screen.x, local_player_screen.y, other_player_screen.x, other_player_screen.y, SPIDER_LINE_WIDTH);
     }
 }
 
@@ -235,6 +268,8 @@ void *main_thread(void *arg) {
             user_request = SHOW_IMPOSTORS;
         } else if (strcmp(buf, "camera") == 0) {
             user_request = SHOW_CAMERA;
+        } else if (strcmp(buf, "local") == 0) {
+            user_request = SHOW_LOCAL_PLAYER;
         } else if (strcmp(buf, "spider") == 0) {
             user_request = TOGGLE_SPIDER;
         }

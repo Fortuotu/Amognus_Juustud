@@ -114,6 +114,17 @@ player_t *game_get_players(int *len) {
     return list.player;
 }
 
+// TODO: Replace this with a real solution that doesn't require a static name.
+player_t *game_get_local_player() {
+    for (int i = 0; i < list.len; i++) {
+        if (strcmp("Sighteach", list.player[i].name.data) == 0) {
+            return &list.player[i];
+        }
+    }
+
+    return &list.player[0];
+}
+
 camera_t *game_get_main_camera() {
     return &main_camera;
 }
