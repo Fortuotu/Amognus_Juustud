@@ -259,3 +259,10 @@ void renderer_finish(renderer_t *renderer) {
 
     use_ctx(&renderer->last_ctx);
 }
+
+void renderer_get_viewport(renderer_t *renderer, float *vp_x, float *vp_y, float *vp_w, float *vp_h) {
+    *vp_x = renderer->vp_x;
+    *vp_y = renderer->vp_y;
+    *vp_w = renderer->vp_width;
+    *vp_h = renderer->vp_heigth;
+}

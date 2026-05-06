@@ -92,10 +92,10 @@ void game_hook_end_frame() {
 }
 
 void game_hook_player_update(void *control) {
-    int success;
+    int success = 0;
 
-    player_t player;
-    int player_idx;
+    player_t player = { 0 };
+    int player_idx = 0;
 
     parse_player(control, &player);
 
@@ -116,6 +116,8 @@ player_t *game_get_players(int *len) {
 
 // TODO: Replace this with a real solution that doesn't require a static name.
 player_t *game_get_local_player() {
+    if (list.len == 0) { return NULL; }
+
     for (int i = 0; i < list.len; i++) {
         if (strcmp("Sighteach", list.player[i].name.data) == 0) {
             return &list.player[i];
@@ -129,36 +131,41 @@ camera_t *game_get_main_camera() {
     return &main_camera;
 }
 
-vec2f_t game_world_to_screen(vec2f_t world_point) {
-    vec4f_t point_homo = (vec4f_t){ world_point.x, world_point.y, 0.0f, 1.0f };
-    vec4f_t view_homo = vec4_mul_mat4x4(&point_homo, &main_camera.view_mat);
-    vec4f_t clip_homo = vec4_mul_mat4x4(&view_homo, &main_camera.proj_mat);
-    GLint vp[4] = { 0 };
+vec2f_t game_world_to_screen(vec2f_t world_point, renderer_t *renderer) {
+    vec4f_t point = (vec4f_t){ world_point.x, world_point.y, 0.0f, 1.0f };
+    vec4f_t view = vec4_mul_mat4x4(&point, &main_camera.view_mat);
+    vec4f_t clip = vec4_mul_mat4x4(&view, &main_camera.proj_mat);
+    
     float x_nd = 0.0f;
     float y_nd = 0.0f;
 
-    if (clip_homo.w < 0.0001f && clip_homo.w > -0.0001f) {
+    if (clip.w < 0.0001f && clip.w > -0.0001f) {
         return (vec2f_t){ 0 };
     }
 
-    x_nd = clip_homo.x / clip_homo.w;
-    y_nd = clip_homo.y / clip_homo.w;
+    x_nd = clip.x / clip.w;
+    y_nd = clip.y / clip.w;
 
-    glGetIntegerv(GL_VIEWPORT, vp);
+    float vp_x;
+    float vp_y;
+    float vp_w;
+    float vp_h;
+
+    renderer_get_viewport(renderer, &vp_x, &vp_y, &vp_w, &vp_h);
 
     vec2f_t out = { 0 };
     vp_transform(
-        (float)vp[0],
-        (float)vp[1],
-        (float)vp[2],
-        (float)vp[3],
+        vp_x,
+        vp_y,
+        vp_w,
+        vp_h,
         x_nd,
         y_nd,
         &out.x,
         &out.y
     );
 
-    out.y = (float)vp[1] + (float)vp[3] - (out.y - (float)vp[1]);
+    out.y = vp_y + vp_h - (out.y - vp_y);
 
     return out;
 }

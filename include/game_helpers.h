@@ -4,6 +4,7 @@
 
 #include "types.h"
 #include "game_internal.h"
+#include "renderer.h"
 
 typedef struct player_s {
     uint8_t id;
@@ -30,6 +31,6 @@ player_t *game_get_players(int *len);
 player_t *game_get_local_player();
 camera_t *game_get_main_camera();
 
-vec2f_t game_world_to_screen(vec2f_t point);
+vec2f_t game_world_to_screen(vec2f_t point, renderer_t *renderer);
 
 uint8_t is_impostor(player_t *player);

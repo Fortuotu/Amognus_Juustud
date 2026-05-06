@@ -82,6 +82,7 @@ static void show_local_player() {
     }
 
     player_t *local_player = game_get_local_player();
+    if (local_player == NULL) { return; }
 
     sprintf(buf, "Player: %s, Role: %s\n", local_player->name.data, internal_string_for_role(local_player->role));
     io_sendstr(buf);
@@ -155,9 +156,10 @@ static void spider() {
     player_t *local_player = game_get_local_player();
     player_t *other_player = NULL;
 
+    if (local_player == NULL) { return; }
     if (is_impostor(local_player)) { return; }
 
-    vec2f_t local_player_screen = game_world_to_screen(local_player->pos);
+    vec2f_t local_player_screen = game_world_to_screen(local_player->pos, &renderer);
 
     for (int i = 0; i < len; i++) {
         other_player = &players[i];
@@ -165,7 +167,7 @@ static void spider() {
         if (local_player->id == other_player->id) { continue; }
         if (!is_impostor(other_player)) { continue; }
 
-        vec2f_t other_player_screen = game_world_to_screen(other_player->pos);
+        vec2f_t other_player_screen = game_world_to_screen(other_player->pos, &renderer);
 
         renderer_add_line(&renderer, local_player_screen.x, local_player_screen.y, other_player_screen.x, other_player_screen.y, SPIDER_LINE_WIDTH);
     }
