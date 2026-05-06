@@ -62,14 +62,7 @@ static void show_impostors_request() {
     }
 
     for (int i = 0; i < len; i++) {
-        if (players[i].role != IMPOSTOR &&
-            players[i].role != VIPER &&
-            players[i].role != SHAPESHIFTER &&
-            players[i].role != PHANTOM &&
-            players[i].role != IMPOSTOR_GHOST)
-        {
-            continue;
-        }
+        if (!is_impostor(&players[i])) { continue; }
         
         sprintf(buf, "Player: %s, Role: %s\n", players[i].name.data, internal_string_for_role(players[i].role));
         io_sendstr(buf);
@@ -162,12 +155,15 @@ static void spider() {
     player_t *local_player = game_get_local_player();
     player_t *other_player = NULL;
 
+    if (is_impostor(local_player)) { return; }
+
     vec2f_t local_player_screen = game_world_to_screen(local_player->pos);
 
     for (int i = 0; i < len; i++) {
         other_player = &players[i];
 
         if (local_player->id == other_player->id) { continue; }
+        if (!is_impostor(other_player)) { continue; }
 
         vec2f_t other_player_screen = game_world_to_screen(other_player->pos);
 

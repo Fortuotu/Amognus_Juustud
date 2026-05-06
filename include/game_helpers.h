@@ -31,3 +31,5 @@ player_t *game_get_local_player();
 camera_t *game_get_main_camera();
 
 vec2f_t game_world_to_screen(vec2f_t point);
+
+uint8_t is_impostor(player_t *player);

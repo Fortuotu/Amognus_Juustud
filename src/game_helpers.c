@@ -162,3 +162,7 @@ vec2f_t game_world_to_screen(vec2f_t world_point) {
 
     return out;
 }
+
+uint8_t is_impostor(player_t *player) {
+    return player->role == IMPOSTOR || player->role == VIPER || player->role == SHAPESHIFTER || player->role == PHANTOM || player->role == IMPOSTOR_GHOST;
+}
