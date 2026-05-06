@@ -1,18 +1,14 @@
 #include "game_internal.h"
 
-static void *call_3param(void *callee, void *param1, void *param2, void *param3) {
+static void *call_0param(void *callee) {
     void *out = NULL;
 
     asm volatile (
         ".intel_syntax noprefix\n"
-        "push %1\n"
-        "push %2\n"
-        "push %3\n"
-        "call %4\n"
-        "add esp, 12\n"
+        "call %1\n"
         ".att_syntax prefix\n"
         : "=a" (out)
-        : "r" (param3), "r" (param2), "r" (param1), "r" (callee)
+        : "r" (callee)
         : "memory"
     );
 
@@ -31,6 +27,25 @@ static void *call_2param(void *callee, void *param1, void *param2) {
         ".att_syntax prefix\n"
         : "=a" (out)
         : "r" (param2), "r" (param1), "r" (callee)
+        : "memory"
+    );
+
+    return out;
+}
+
+static void *call_3param(void *callee, void *param1, void *param2, void *param3) {
+    void *out = NULL;
+
+    asm volatile (
+        ".intel_syntax noprefix\n"
+        "push %1\n"
+        "push %2\n"
+        "push %3\n"
+        "call %4\n"
+        "add esp, 12\n"
+        ".att_syntax prefix\n"
+        : "=a" (out)
+        : "r" (param3), "r" (param2), "r" (param1), "r" (callee)
         : "memory"
     );
 
@@ -79,6 +94,34 @@ void internal_call_rb_get_position_injected(void *rb, vec2f_t *out_pos) {
         out_pos,
         NULL
     );
+}
+
+void internal_call_camera_get_projection_matrix_injected(void *camera, mat4x4f_t *out_mat) {
+    if (camera == NULL) { return; }
+
+    (void)call_3param(
+        find_gameassembly() + CAMERA_GET_PROJECTION_MATRIX_INJECTED,
+        camera,
+        out_mat,
+        NULL
+    );
+}
+
+void internal_call_camera_get_view_matrix_injected(void *camera, mat4x4f_t *out_mat) {
+    if (camera == NULL) { return; }
+
+    (void)call_3param(
+        find_gameassembly() + CAMERA_GET_VIEW_MATRIX_INJECTED,
+        camera,
+        out_mat,
+        NULL
+    );
+}
+
+void internal_static_call_get_main_camera(void **camera_out) {
+    void *camera = call_0param(find_gameassembly() + CAMERA_STATIC_GET_MAIN);
+
+    *camera_out = camera;
 }
 
 void internal_extract_sys_str(void *sys_str, static_string_t *out) {

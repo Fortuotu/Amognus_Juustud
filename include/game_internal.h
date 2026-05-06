@@ -36,6 +36,10 @@ typedef struct game_rb_s {
     int dummy;
 } game_rb_t;
 
+typedef struct game_camera_s {
+    int dummy;
+} game_camera_t;
+
 void internal_extract_control(void *control, player_control_t *out);
 
 void internal_extract_info(void *info, player_info_t *out);
@@ -43,6 +47,11 @@ void internal_call_info_get_player_name(void *info, void **out_sys_str);
 
 void internal_extract_rb(void *rb, game_rb_t *out);
 void internal_call_rb_get_position_injected(void *rb, vec2f_t *out_pos);
+
+void internal_call_camera_get_projection_matrix_injected(void *camera, mat4x4f_t *out_mat);
+void internal_call_camera_get_view_matrix_injected(void *camera, mat4x4f_t *out_mat);
+
+void internal_static_call_get_main_camera(void **camera_out);
 
 void internal_extract_sys_str(void *sys_str, static_string_t *out);
 

@@ -11,8 +11,14 @@ def recv_thread():
 
 def send_thread():
     while True:
-        data = input().encode()
-        sock.send(data)
+        data = input()
+        
+        if (data == 'clear'):
+            os.system('clear')
+
+            continue
+
+        sock.send(data.encode())
 
 def find_amongus_pid(cmd: str):
     for filename in os.listdir("/proc"):
@@ -25,7 +31,7 @@ def find_amongus_pid(cmd: str):
     
     return None
 
-path = "S:\common\Among Us\Among Us.exe"
+path = "S:\\common\\Among Us\\Among Us.exe"
 pid = find_amongus_pid(path)
 
 if not pid:
@@ -33,7 +39,7 @@ if not pid:
     exit(1)
     
 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-sock.connect(f'/tmp/cheat_io_{pid}.sock')
+sock.connect(f'/tmp/.cheat_io_{pid}.sock')
 
 t1 = threading.Thread(target=recv_thread)
 t2 = threading.Thread(target=send_thread)

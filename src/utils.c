@@ -68,3 +68,16 @@ void vp_transform_inv(
     *x_nd = nx * 2.0f - 1.0f;
     *y_nd = ny * 2.0f - 1.0f;
 }
+
+void sprintf_mat4x4(char *buf, const mat4x4f_t *mat) {
+    sprintf(buf,
+        "[%f, %f, %f, %f]\n"
+        "[%f, %f, %f, %f]\n"
+        "[%f, %f, %f, %f]\n"
+        "[%f, %f, %f, %f]\n",
+        mat->m1, mat->m2, mat->m3, mat->m4,
+        mat->m5, mat->m6, mat->m7, mat->m8,
+        mat->m9, mat->m10, mat->m11, mat->m12,
+        mat->m13, mat->m14, mat->m15, mat->m16
+    );
+}

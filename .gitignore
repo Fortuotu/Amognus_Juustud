@@ -59,4 +59,4 @@ build
 
 # Il2CppDumper files
 dump.cs
-hooks.cs
+il2cpp.h

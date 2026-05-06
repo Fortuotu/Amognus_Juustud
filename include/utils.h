@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "types.h"
+
 void *find_gameassembly();
 
 void vp_transform(
@@ -26,3 +28,5 @@ void vp_transform_inv(
     const float y_w,
     float *x_nd,
     float *y_nd);
+
+void sprintf_mat4x4(char *buf, const mat4x4f_t *mat);

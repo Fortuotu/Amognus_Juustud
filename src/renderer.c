@@ -6,11 +6,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-typedef struct vec2f_s {
-    float x;
-    float y;
-} vec2f_t;
-
 typedef struct vertex_s {
     float x;
     float y;
