@@ -81,3 +81,20 @@ void sprintf_mat4x4(char *buf, const mat4x4f_t *mat) {
         mat->m13, mat->m14, mat->m15, mat->m16
     );
 }
+
+vec4f_t vec4_mul_mat4x4(const vec4f_t *vec, const mat4x4f_t *mat) {
+    vec4f_t out = { 0 };
+
+    if (vec == NULL || mat == NULL) {
+        return out;
+    }
+
+    const float *m = (const float *)mat;
+
+    out.x = vec->x * m[0] + vec->y * m[4] + vec->z * m[8] + vec->w * m[12];
+    out.y = vec->x * m[1] + vec->y * m[5] + vec->z * m[9] + vec->w * m[13];
+    out.z = vec->x * m[2] + vec->y * m[6] + vec->z * m[10] + vec->w * m[14];
+    out.w = vec->x * m[3] + vec->y * m[7] + vec->z * m[11] + vec->w * m[15];
+
+    return out;
+}

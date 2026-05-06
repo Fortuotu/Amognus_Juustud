@@ -9,6 +9,7 @@ typedef struct player_s {
     uint8_t id;
     static_string_t name;
     player_role_t role;
+    vec2f_t pos;
 } player_t;
 
 typedef struct camera_s {

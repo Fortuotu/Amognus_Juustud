@@ -20,12 +20,15 @@ typedef enum user_request_e {
     NO_REQUEST,
     SHOW_PLAYERS,
     SHOW_IMPOSTORS,
-    SHOW_CAMERA
+    SHOW_CAMERA,
+    TOGGLE_SPIDER
 } user_request_t;
 
 static user_request_t user_request = NO_REQUEST;
 
 static renderer_t renderer = { 0 };
+
+static uint8_t spider_enabled = false;
 
 static void show_players_request() {
     char buf[512] = { 0 };
@@ -40,7 +43,7 @@ static void show_players_request() {
     }
 
     for (int i = 0; i < len; i++) {
-        sprintf(buf, "Player: %s, Role: %s\n", players[i].name.data, internal_string_for_role(players[i].role));
+        sprintf(buf, "Player: %s, Role: %s, Pos: (%f, %f)\n", players[i].name.data, internal_string_for_role(players[i].role), players[i].pos.x, players[i].pos.y);
         io_sendstr(buf);
     }
 }
@@ -95,6 +98,17 @@ static void show_camera_request() {
     io_sendstr(buf);
 }
 
+static void toggle_spider_request() {
+    spider_enabled = !spider_enabled;
+
+    if (spider_enabled) {
+        io_sendstr("Enabled spider\n");
+    }
+    else {
+        io_sendstr("Disabled spider\n");
+    }
+}
+
 static void handle_user_request() {
     switch (user_request) {
         case SHOW_PLAYERS:
@@ -106,11 +120,26 @@ static void handle_user_request() {
         case SHOW_CAMERA:
             show_camera_request();
             break;
+        case TOGGLE_SPIDER:
+            toggle_spider_request();
+            break;
         default:
             break;
     }
 
     user_request = NO_REQUEST;
+}
+
+static void spider() {
+    int len = 0;
+    player_t *players = game_get_players(&len);
+
+    for (int i = 0; i < len; i++) {
+        vec2f_t zero_zero_screen = game_world_to_screen((vec2f_t){ .x = 0.0f, .y = 0.0f });
+        vec2f_t player_screen = game_world_to_screen(players[i].pos);
+
+        renderer_add_line(&renderer, player_screen.x, player_screen.y, zero_zero_screen.x, zero_zero_screen.y, 3.0f);
+    }
 }
 
 static void render_overlay() {
@@ -119,7 +148,7 @@ static void render_overlay() {
     handle_user_request();
 
     renderer_start(&renderer);
-    renderer_add_line(&renderer, 25.0f, 25.0f, 125.0f, 25.0f, 15.0f);
+    if (spider_enabled) { spider(); }
     renderer_finish(&renderer);
 
     game_hook_end_frame();
@@ -206,6 +235,8 @@ void *main_thread(void *arg) {
             user_request = SHOW_IMPOSTORS;
         } else if (strcmp(buf, "camera") == 0) {
             user_request = SHOW_CAMERA;
+        } else if (strcmp(buf, "spider") == 0) {
+            user_request = TOGGLE_SPIDER;
         }
     }
 }

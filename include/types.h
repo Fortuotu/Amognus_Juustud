@@ -5,6 +5,13 @@ typedef struct vec2f_s {
     float y;
 } vec2f_t;
 
+typedef struct vec4f_s {
+    float x;
+    float y;
+    float z;
+    float w;    
+} vec4f_t;
+
 typedef struct mat4x4f_s {
     float m1;
     float m2;

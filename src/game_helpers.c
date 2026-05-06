@@ -6,6 +6,7 @@
 #include <string.h>
 #include <pthread.h>
 
+#include "glad/glad.h"
 #include "io.h"
 
 #define MAX_PLAYERS 32
@@ -32,6 +33,8 @@ static void parse_player(void *control, player_t *player) {
 
     internal_call_info_get_player_name(parsed_control.info, &player_name_sys_str);
     internal_extract_sys_str(player_name_sys_str, &player->name);
+    
+    internal_call_rb_get_position_injected(parsed_control.rb, &player->pos);
 
     player->id = parsed_control.id;
     player->role = parsed_info.role;
@@ -115,6 +118,36 @@ camera_t *game_get_main_camera() {
     return &main_camera;
 }
 
-vec2f_t game_world_to_screen(vec2f_t point) {
-    return point;
+vec2f_t game_world_to_screen(vec2f_t world_point) {
+    vec4f_t point_homo = (vec4f_t){ world_point.x, world_point.y, 0.0f, 1.0f };
+    vec4f_t view_homo = vec4_mul_mat4x4(&point_homo, &main_camera.view_mat);
+    vec4f_t clip_homo = vec4_mul_mat4x4(&view_homo, &main_camera.proj_mat);
+    GLint vp[4] = { 0 };
+    float x_nd = 0.0f;
+    float y_nd = 0.0f;
+
+    if (clip_homo.w < 0.0001f && clip_homo.w > -0.0001f) {
+        return (vec2f_t){ 0 };
+    }
+
+    x_nd = clip_homo.x / clip_homo.w;
+    y_nd = clip_homo.y / clip_homo.w;
+
+    glGetIntegerv(GL_VIEWPORT, vp);
+
+    vec2f_t out = { 0 };
+    vp_transform(
+        (float)vp[0],
+        (float)vp[1],
+        (float)vp[2],
+        (float)vp[3],
+        x_nd,
+        y_nd,
+        &out.x,
+        &out.y
+    );
+
+    out.y = (float)vp[1] + (float)vp[3] - (out.y - (float)vp[1]);
+
+    return out;
 }
