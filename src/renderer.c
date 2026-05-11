@@ -11,6 +11,31 @@ typedef struct vertex_s {
     float y;
 } vertex_t;
 
+const char *vertex_code = 
+    "#version 460 core\n"
+    "\n"
+    "layout (location = 0) in vec3 aPos;\n"
+    "\n"
+    "out vec3 pos;\n"
+    "\n"
+    "void main()\n"
+    "{\n"
+    "    pos = aPos;\n"
+    "\n"
+    "    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+    "}\n";
+
+const char *fragment_code = 
+    "#version 460 core\n"
+    "\n"
+    "in vec3 pos;\n"
+    "\n"
+    "out vec4 fragColor;\n"
+    "\n"
+    "void main() {\n"
+    "    fragColor = vec4(0.8, 0.2, 0.0, 1.0);\n"
+    "}\n";
+
 void renderer_create(renderer_t *renderer) {
     renderer->pointers_loaded = false;
     renderer->fully_loaded = false;
@@ -31,40 +56,7 @@ void renderer_destroy(renderer_t *renderer) {
     glDeleteBuffers(1, &renderer->ctx.vbo);
     glDeleteProgram(renderer->ctx.shader);
 }
-
-static char *read_file(const char *filename) {
-    char *buffer;
-    long length;
-    FILE *f;
-
-    f = fopen(filename, "r");
-    if (f == NULL) {
-        return NULL;
-    }
-
-    fseek(f, 0, SEEK_END);
-    length = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    buffer = malloc(length + 1);
-    if (buffer == NULL) {
-        fclose(f);
-
-        return NULL;
-    }
-
-    fread(buffer, 1, length, f);
-    buffer[length] = '\0';
-    
-    fclose (f);
-
-    return buffer;
-}
-
-static GLuint compile_shader(char *vertex_filename, char *fragment_filename, int *success) {
-    char *vertex_code = read_file(vertex_filename);
-    char *fragment_code = read_file(fragment_filename);
-
+static GLuint compile_shader(const char *vertex_code, const char *fragment_code, int *success) {
     char infolog[512];
     GLuint vertex;
     GLuint fragment;
@@ -111,9 +103,6 @@ static GLuint compile_shader(char *vertex_filename, char *fragment_filename, int
     glDeleteShader(vertex);
     glDeleteShader(fragment);
 
-    free(vertex_code);
-    free(fragment_code);
-
     *success = 1;
 
     return id;
@@ -159,7 +148,7 @@ static void renderer_lazyload(renderer_t *renderer) {
     gl_context_t last;
     backup_ctx(&last);
 
-    renderer->ctx.shader = compile_shader("/home/ott/Documents/Amognus_Juustud/shaders/shader.vs", "/home/ott/Documents/Amognus_Juustud/shaders/shader.fs", &success);
+    renderer->ctx.shader = compile_shader(vertex_code, fragment_code, &success);
     if (!success) {
         io_sendstr("Could not create shader\n");
 
