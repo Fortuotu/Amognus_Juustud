@@ -2,10 +2,25 @@ cmake_minimum_required(VERSION 3.20)
 
 project(Amognus_Juustud)
 
-set(sources 
+option(BUILD_TESTS "Build test executables" ON)
+
+include_directories(include)
+
+if(BUILD_TESTS) 
+    set(SOURCES
+        src/tests/test_trampoline.c
+        src/trampoline.c
+    )
+
+    add_executable(test_trampoline ${SOURCES})
+    set_target_properties(test_trampoline PROPERTIES COMPILE_OPTIONS "-m32" LINK_FLAGS "-m32")
+endif()
+
+set(SOURCES 
     src/inject.c
     src/io.c
     src/utils.c
+    src/Zydis.c
     src/override.c
     src/hooks.c
     src/game_internal.c
@@ -14,8 +29,6 @@ set(sources
     src/renderer.c
 )
 
-include_directories(include)
-
-add_library(inject SHARED ${sources})
+add_library(inject SHARED ${SOURCES})
 set_target_properties(inject PROPERTIES COMPILE_OPTIONS "-m32" LINK_FLAGS "-m32")
 target_link_libraries(inject libdl.so libGL.so libX11.so)
