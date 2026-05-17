@@ -10,23 +10,27 @@ if(BUILD_TESTS)
     set(SOURCES
         src/tests/test_trampoline.c
         src/trampoline.c
+
+        src/Zydis.c
     )
 
     add_executable(test_trampoline ${SOURCES})
-    set_target_properties(test_trampoline PROPERTIES COMPILE_OPTIONS "-m32" LINK_FLAGS "-m32")
+    target_compile_options(test_trampoline PRIVATE -m32 -g)
+    target_link_options(test_trampoline PRIVATE -m32)
 endif()
 
 set(SOURCES 
     src/inject.c
     src/io.c
     src/utils.c
-    src/Zydis.c
     src/override.c
     src/hooks.c
     src/game_internal.c
     src/game_helpers.c
-    src/glad.c
     src/renderer.c
+
+    src/Zydis.c
+    src/glad.c
 )
 
 add_library(inject SHARED ${SOURCES})
